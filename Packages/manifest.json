@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.meta.xr.sdk.all": "83.0.4",
+    "com.meta.xr.sdk.all": "85.0.0",
     "com.meta.xr.sdk.movement": "file:C:/Users/Romai/Documents/Unity-Movement-83.0.0",
     "com.unity.ai.navigation": "2.0.9",
     "com.unity.collab-proxy": "2.10.0",
