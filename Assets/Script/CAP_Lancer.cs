@@ -15,6 +15,10 @@ public class CAP_Lancer : MonoBehaviour
 
     [Header("Force de lancer")]
     public float throwForceMultiplier = 1.0f;
+    [Tooltip("Reference de direction pour considerer ce qui est un lancer vers l'avant (si null: spawnPoint puis CAP)")]
+    public Transform throwDirectionReference;
+    [Tooltip("Si vrai, un vecteur de lancer vers l'arriere est corrige vers l'avant")]
+    public bool preventBackwardThrow = true;
 
     [Header("Detection du lancer")]
     public float swipeThreshold = 0.8f; // Vitesse minimale (m/s) pour declencher un lancer
@@ -177,6 +181,8 @@ public class CAP_Lancer : MonoBehaviour
 
     void SpawnAndThrowFlotteur(Vector3 velocity)
     {
+        velocity = GetValidatedThrowVelocity(velocity);
+
         // Verifier la vitesse minimale requise pour spawner
         if (velocity.magnitude < minSpawnVelocity)
         {
@@ -211,6 +217,47 @@ public class CAP_Lancer : MonoBehaviour
         lastThrowVelocity = velocity;
 
         Debug.Log("Flotteur lance a la vitesse: " + rb.linearVelocity.magnitude.ToString("F2") + " m/s");
+    }
+
+    Vector3 GetValidatedThrowVelocity(Vector3 rawVelocity)
+    {
+        if (!preventBackwardThrow)
+        {
+            return rawVelocity;
+        }
+
+        Vector3 forward = GetThrowForwardReference();
+        float forwardDot = Vector3.Dot(rawVelocity, forward);
+
+        if (forwardDot >= 0f)
+        {
+            return rawVelocity;
+        }
+
+        // Corrige un pic de velocite inverse (contre-mouvement) pour garder un lancer coherent.
+        Vector3 corrected = forward * rawVelocity.magnitude;
+
+        if (debugLogs)
+        {
+            Debug.Log("Lancer corrige: vecteur arriere detecte, conversion vers l'avant.");
+        }
+
+        return corrected;
+    }
+
+    Vector3 GetThrowForwardReference()
+    {
+        if (throwDirectionReference != null)
+        {
+            return throwDirectionReference.forward.normalized;
+        }
+
+        if (spawnPoint != null)
+        {
+            return spawnPoint.forward.normalized;
+        }
+
+        return CAP != null ? CAP.transform.forward.normalized : Vector3.forward;
     }
 
     void UpdateCapVelocity()
