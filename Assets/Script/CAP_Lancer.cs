@@ -7,6 +7,7 @@ public class CAP_Lancer : MonoBehaviour
     [Header("References")]
     public GameObject CAP;
     public GameObject Flotteur;
+    public GameObject Poisson; // Objet poisson a spawner au rappel
     public Transform spawnPoint; // Point de spawn du flotteur (optionnel, cherche "Spawn_Flotteur" si null)
 
     [Tooltip("Assigner le composant HandGrabInteractable present sur l'objet ISDK_HandGrabInteraction de la canne")]
@@ -20,6 +21,13 @@ public class CAP_Lancer : MonoBehaviour
     public float swipeTime = 0.4f;      // Duree max du geste en secondes
     public float throwCooldown = 0.35f;
     public float minSpawnVelocity = 2.0f; // Vitesse minimale requise pour spawner le flotteur (m/s)
+
+    [Header("Rappel du flotteur")]
+    public bool enableRecall = true;    // Activer le systeme de rappel
+    public float recallThreshold = 0.6f; // Vitesse minimale du mouvement inverse pour declencher le rappel (m/s)
+    public float recallForceMultiplier = 1.2f; // Multiplicateur de force pour rappeler le flotteur
+    public float recallCompleteDistance = 0.5f; // Distance pour considerer le flotteur rappele (metres)
+    public float poissonSpawnHeight = 0.1f; // Hauteur au-dessus des pieds pour spawner le poisson
 
     [Header("Debug")]
     public bool debugLogs = false;
@@ -36,6 +44,9 @@ public class CAP_Lancer : MonoBehaviour
     private Vector3 capVelocity;
     private bool hasLastPosition = false;
     private float nextDebugLogTime = 0f;
+
+    private Vector3 lastThrowVelocity; // Velocite initiale du lancer pour calculer le mouvement inverse
+    private bool isRecallingFlotteur = false; // Flag pour savoir si le flotteur est en train d'etre rappele
 
     void Start()
     {
@@ -82,7 +93,10 @@ public class CAP_Lancer : MonoBehaviour
         if (!isHeldByPlayer)
         {
             ResetTracking();
-            DestroyCurrentFlotteur();
+            if (!isRecallingFlotteur)
+            {
+                DestroyCurrentFlotteur();
+            }
         }
 
         if (debugLogs)
@@ -111,6 +125,13 @@ public class CAP_Lancer : MonoBehaviour
         }
 
         UpdateCapVelocity();
+
+        // Verifier le rappel du flotteur si celui-ci est actif
+        if (currentFlotteur != null && enableRecall)
+        {
+            UpdateFlotteurRecall();
+        }
+
         DetectSwipe();
     }
 
@@ -186,6 +207,9 @@ public class CAP_Lancer : MonoBehaviour
         rb.linearVelocity = velocity * throwForceMultiplier;
         rb.angularVelocity = Vector3.zero;
 
+        // Sauvegarder la velocite initiale pour le rappel
+        lastThrowVelocity = velocity;
+
         Debug.Log("Flotteur lance a la vitesse: " + rb.linearVelocity.magnitude.ToString("F2") + " m/s");
     }
 
@@ -216,6 +240,80 @@ public class CAP_Lancer : MonoBehaviour
         capVelocity = Vector3.zero;
         hasLastPosition = false;
         peakSwipeVelocity = Vector3.zero;
+        isRecallingFlotteur = false;
+    }
+
+    void UpdateFlotteurRecall()
+    {
+        if (currentFlotteur == null)
+        {
+            return;
+        }
+
+        Rigidbody rb = currentFlotteur.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            return;
+        }
+
+        // Calculer la distance entre le flotteur et la main
+        float distanceToHand = Vector3.Distance(currentFlotteur.transform.position, CAP.transform.position);
+
+        // Si le flotteur est rappele et arrive a la main
+        if (isRecallingFlotteur && distanceToHand < recallCompleteDistance)
+        {
+            SpawnPoisson();
+            DestroyCurrentFlotteur();
+            isRecallingFlotteur = false;
+            return;
+        }
+
+        // Calcul du mouvement inverse : produit scalaire pour voir si la vélocité de la main va dans la direction opposée au lancer
+        float reverseMovement = Vector3.Dot(capVelocity, -lastThrowVelocity.normalized);
+
+        // Si le mouvement inverse est suffisant et que le joueur bouge vers l'arrière
+        if (reverseMovement > recallThreshold && !isRecallingFlotteur)
+        {
+            isRecallingFlotteur = true;
+            if (debugLogs)
+            {
+                Debug.Log("Rappel du flotteur activé | reverseMovement=" + reverseMovement.ToString("F2"));
+            }
+        }
+
+        // Appliquer la force de rappel si en phase de rappel
+        if (isRecallingFlotteur)
+        {
+            // Calculer la direction de rappel (vers la main)
+            Vector3 recallDirection = (CAP.transform.position - currentFlotteur.transform.position).normalized;
+
+            // Appliquer une force dans la direction du rappel
+            rb.linearVelocity = recallDirection * capVelocity.magnitude * recallForceMultiplier;
+        }
+    }
+
+    void SpawnPoisson()
+    {
+        if (Poisson == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning("Aucun prefab Poisson assigne !");
+            }
+            return;
+        }
+
+        // Calculer la position au pied du joueur
+        Vector3 poissonSpawnPosition = new Vector3(
+            CAP.transform.position.x,
+            CAP.transform.position.y - poissonSpawnHeight,
+            CAP.transform.position.z
+        );
+
+        // Spawner le poisson
+        GameObject spawnedPoisson = Instantiate(Poisson, poissonSpawnPosition, Quaternion.identity);
+
+        Debug.Log("Poisson spawne aux pieds du joueur !");
     }
 
     void DestroyCurrentFlotteur()
