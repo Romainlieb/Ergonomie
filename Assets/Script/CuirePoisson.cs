@@ -8,21 +8,21 @@ public class CuirePoisson : MonoBehaviour
     // Cette fonction s'active quand le poisson entre dans une zone "Trigger"
     void OnTriggerEnter(Collider autre)
     {
-        // On vérifie si l'objet touché a le tag "cuisson"
-        if (autre.CompareTag("cuisson"))
+        // On vï¿½rifie si l'objet touchï¿½ a le tag "Cuisson"
+        if (autre.CompareTag("Cuisson"))
         {
-            // On récupère le moteur de rendu du poisson
+            // On rï¿½cupï¿½re le moteur de rendu du poisson
             Renderer rend = GetComponent<Renderer>();
 
             if (rend != null)
             {
-                // On récupère ses matériaux
+                // On rï¿½cupï¿½re ses matï¿½riaux
                 Material[] mats = rend.materials;
 
-                // On change la couleur du premier matériau (le blanc)
+                // On change la couleur du premier matï¿½riau (le blanc)
                 mats[0].color = couleurCuit;
 
-                // On renvoie les matériaux modifiés au poisson
+                // On renvoie les matï¿½riaux modifiï¿½s au poisson
                 rend.materials = mats;
 
                 Debug.Log("Le poisson est dans le feu !");
