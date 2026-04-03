@@ -17,10 +17,10 @@ public class SequentialTaskManager : MonoBehaviour
 
     [Header("Task Sequence")]
     public List<TaskStep> taskList = new List<TaskStep>();
-    public string finalCompletionMessage = "Toutes les tâches sont terminées !";
+    public string finalCompletionMessage = "Toutes les tï¿½ches sont terminï¿½es !";
 
     private int currentTaskIndex = 0;
-    private Coroutine chrono; // Garde en mémoire notre minuteur
+    private Coroutine chrono; // Garde en mï¿½moire notre minuteur
 
     void Start()
     {
@@ -29,7 +29,7 @@ public class SequentialTaskManager : MonoBehaviour
 
     public void OnZoneEntered(GameObject zoneEntered)
     {
-        // Vérifie si la zone touchée est bien celle qu'on attend
+        // Vï¿½rifie si la zone touchï¿½e est bien celle qu'on attend
         if (currentTaskIndex < taskList.Count && zoneEntered == taskList[currentTaskIndex].targetZone)
         {
             currentTaskIndex++;
@@ -39,7 +39,7 @@ public class SequentialTaskManager : MonoBehaviour
 
     void UpdateUI()
     {
-        // Met à jour le texte avec la bonne instruction
+        // Met ï¿½ jour le texte avec la bonne instruction
         if (currentTaskIndex < taskList.Count)
         {
             instructionText.text = taskList[currentTaskIndex].instruction;
@@ -49,20 +49,20 @@ public class SequentialTaskManager : MonoBehaviour
             instructionText.text = finalCompletionMessage;
         }
 
-        // --- LE SYSTÈME DE 8 SECONDES ---
-        // Si un compte à rebours est déjà en cours, on le coupe pour ne pas cacher le nouveau message trop vite
+        // --- LE SYSTï¿½ME DE 8 SECONDES ---
+        // Si un compte ï¿½ rebours est dï¿½jï¿½ en cours, on le coupe pour ne pas cacher le nouveau message trop vite
         if (chrono != null)
         {
             StopCoroutine(chrono);
         }
         // On lance le nouveau minuteur de 8 secondes
-        chrono = StartCoroutine(CacherTexteApresDelai(8f));
+        chrono = StartCoroutine(CacherTexteApresDelai(15f));
     }
 
-    // Le minuteur en arrière-plan
+    // Le minuteur en arriï¿½re-plan
     IEnumerator CacherTexteApresDelai(float tempsAAttendre)
     {
-        yield return new WaitForSeconds(tempsAAttendre); // Attend exactement le temps demandé
-        instructionText.text = ""; // Vide le texte pour le faire disparaître
+        yield return new WaitForSeconds(tempsAAttendre); // Attend exactement le temps demandï¿½
+        instructionText.text = ""; // Vide le texte pour le faire disparaï¿½tre
     }
 }
